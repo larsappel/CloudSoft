@@ -12,11 +12,19 @@
 }
 
 <form asp-action="Subscribe" method="post">
-    <label asp-for="Name"></label>
-    <input asp-for="Name" class="form-control" />
-
-    <label asp-for="Email"></label>
-    <input asp-for="Email" class="form-control" />
-
+    <div class="form-group">
+        <label asp-for="Name"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
     <button type="submit">Sign Up</button>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
