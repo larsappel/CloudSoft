@@ -1,3 +1,4 @@
+using CloudSoft.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CloudSoft.Controllers;
@@ -5,23 +6,25 @@ namespace CloudSoft.Controllers;
 public class NewsletterController : Controller
 {
 
-    // GET: /Newsletter/Subscribe
+    [HttpGet]
     public IActionResult Subscribe()
     {
         return View();
     }
 
-    // POST: /Newsletter/Subscribe
     [HttpPost]
-    public IActionResult Subscribe(string name, string email)
+    public IActionResult Subscribe(Subscriber subscriber)
     {
         // Add subscription logic here
         // ...
 
         // Write to the console
-        Console.WriteLine($"New subscription - Name: {name} Email: {email}");
+        Console.WriteLine($"New subscription - Name: {subscriber.Name} Email: {subscriber.Email}");
 
         // Send a message to the user
-        return Content($"Thank you {name} for subscribing to our newsletter!");
+        ViewBag.Message = $"Thank you for subscribing, {subscriber.Name}!";
+
+        // Return the view
+        return View();
     }
 }

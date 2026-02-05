@@ -1,15 +1,22 @@
+@model CloudSoft.Models.Subscriber
+
 @{
-    ViewData["Title"] = "Sign up for our newsletter";
+    ViewData["Title"] = "Newsletter Signup";
 }
 
-<h2>Signup up for our newsletter</h2>
+<h2>Newsletter Signup</h2>
 
-<form action="/Newsletter/Subscribe" method="post">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name">
+@if (ViewBag.Message != null)
+{
+    <p style="color: green;">@ViewBag.Message</p>
+}
 
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email">
+<form asp-action="Subscribe" method="post">
+    <label asp-for="Name"></label>
+    <input asp-for="Name" class="form-control" />
+
+    <label asp-for="Email"></label>
+    <input asp-for="Email" class="form-control" />
 
     <button type="submit">Sign Up</button>
 </form>
