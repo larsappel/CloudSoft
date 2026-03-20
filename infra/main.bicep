@@ -39,7 +39,6 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
           sourcePortRange: '*'
           destinationPortRange: '22'
           sourceAddressPrefix: 'Internet'
-          destinationAddressPrefix: '*'
           destinationApplicationSecurityGroups: [{ id: asgBastion.id }]
         }
       }
@@ -53,7 +52,6 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
           sourcePortRange: '*'
           destinationPortRange: '80'
           sourceAddressPrefix: 'Internet'
-          destinationAddressPrefix: '*'
           destinationApplicationSecurityGroups: [{ id: asgProxy.id }]
         }
       }
@@ -67,7 +65,6 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
           sourcePortRange: '*'
           destinationPortRange: '443'
           sourceAddressPrefix: 'Internet'
-          destinationAddressPrefix: '*'
           destinationApplicationSecurityGroups: [{ id: asgProxy.id }]
         }
       }
@@ -80,8 +77,6 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '5000'
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: '*'
           sourceApplicationSecurityGroups: [{ id: asgProxy.id }]
           destinationApplicationSecurityGroups: [{ id: asgApp.id }]
         }
@@ -95,8 +90,6 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '22'
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: '*'
           sourceApplicationSecurityGroups: [{ id: asgBastion.id }]
           destinationApplicationSecurityGroups: [{ id: asgProxy.id }]
         }
@@ -110,8 +103,6 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '22'
-          sourceAddressPrefix: '*'
-          destinationAddressPrefix: '*'
           sourceApplicationSecurityGroups: [{ id: asgBastion.id }]
           destinationApplicationSecurityGroups: [{ id: asgApp.id }]
         }

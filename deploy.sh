@@ -73,7 +73,7 @@ az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}" --output non
 # ----------------------------------------------------------
 echo ""
 echo "[7/11] Deploying Azure infrastructure (this takes several minutes)..."
-DEPLOY_OUTPUT=$(az deployment group create \
+az deployment group create \
     --resource-group "${RESOURCE_GROUP}" \
     --template-file infra/main.bicep \
     --parameters \
@@ -81,11 +81,12 @@ DEPLOY_OUTPUT=$(az deployment group create \
         runnerToken="${RUNNER_TOKEN}" \
         githubRepo="${GITHUB_REPO}" \
         runnerVersion="${RUNNER_VERSION}" \
-    --output json)
+    --output none
 
-PROXY_IP=$(echo "${DEPLOY_OUTPUT}" | jq -r '.properties.outputs.proxyPublicIp.value')
-BASTION_IP=$(echo "${DEPLOY_OUTPUT}" | jq -r '.properties.outputs.bastionPublicIp.value')
-STORAGE_ACCOUNT=$(echo "${DEPLOY_OUTPUT}" | jq -r '.properties.outputs.storageAccountName.value')
+# Retrieve outputs separately to avoid streaming issues
+PROXY_IP=$(az deployment group show --resource-group "${RESOURCE_GROUP}" --name main --query 'properties.outputs.proxyPublicIp.value' -o tsv)
+BASTION_IP=$(az deployment group show --resource-group "${RESOURCE_GROUP}" --name main --query 'properties.outputs.bastionPublicIp.value' -o tsv)
+STORAGE_ACCOUNT=$(az deployment group show --resource-group "${RESOURCE_GROUP}" --name main --query 'properties.outputs.storageAccountName.value' -o tsv)
 
 echo "  Proxy IP:        ${PROXY_IP}"
 echo "  Bastion IP:      ${BASTION_IP}"
