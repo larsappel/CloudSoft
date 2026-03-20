@@ -17,10 +17,10 @@ graph TB
         subgraph VNet["VNet 10.0.0.0/16"]
             subgraph Subnet["Subnet 10.0.1.0/24"]
                 subgraph ASG-Bastion["ASG: Bastion"]
-                    Bastion["vm-bastion<br/>B1s<br/>Public IP: 20.91.226.16<br/>SSH only"]
+                    Bastion["vm-bastion<br/>B1s<br/>Public IP<br/>SSH only"]
                 end
                 subgraph ASG-Proxy["ASG: Proxy"]
-                    Proxy["vm-proxy<br/>B1s<br/>Public IP: 20.240.45.13<br/>HTTP/HTTPS → :5000"]
+                    Proxy["vm-proxy<br/>B1s<br/>Public IP<br/>HTTP/HTTPS → :5000"]
                 end
                 subgraph ASG-App["ASG: App"]
                     App["vm-app<br/>B2s<br/>Private IP: 10.0.1.10<br/>.NET 10 + GH Runner"]
@@ -88,7 +88,7 @@ sequenceDiagram
 
     rect rgb(255, 245, 230)
         Note over User,Nginx: Request Flow
-        User->>Nginx: HTTPS request (20.240.45.13)
+        User->>Nginx: HTTPS request (51.107.182.255)
         Nginx->>Nginx: SSL termination (self-signed cert)
         Nginx->>Nginx: Rate limit check (10r/s, burst=20)
         Nginx->>Nginx: Cache check
@@ -101,11 +101,11 @@ sequenceDiagram
 
 ### Bastion Host (vm-bastion)
 
-Secure SSH jump box. Runs on a **B1s** VM with a public IP (`20.91.226.16`). The only VM with SSH exposed to the Internet. Used to access the proxy and application servers internally via SSH. No application workloads run on this machine — its sole purpose is secure administrative access to the other VMs in the VNet.
+Secure SSH jump box. Runs on a **B1s** VM with a public IP (`51.107.181.183`). The only VM with SSH exposed to the Internet. Used to access the proxy and application servers internally via SSH. No application workloads run on this machine — its sole purpose is secure administrative access to the other VMs in the VNet.
 
 ### Reverse Proxy (vm-proxy)
 
-Nginx reverse proxy and SSL termination point. Runs on a **B1s** VM with a public IP (`20.240.45.13`). Accepts HTTP (redirects to HTTPS) and HTTPS traffic from the Internet. Uses a self-signed TLS certificate generated with OpenSSL, configured with the correct IP SAN for the public IP address. Implements rate limiting at 10 requests per second with a burst of 20 to prevent abuse. Proxy caching is enabled for improved performance. All valid traffic is forwarded to the application server at `10.0.1.10:5000`.
+Nginx reverse proxy and SSL termination point. Runs on a **B1s** VM with a public IP (`51.107.182.255`). Accepts HTTP (redirects to HTTPS) and HTTPS traffic from the Internet. Uses a self-signed TLS certificate generated with OpenSSL, configured with the correct IP SAN for the public IP address. Implements rate limiting at 10 requests per second with a burst of 20 to prevent abuse. Proxy caching is enabled for improved performance. All valid traffic is forwarded to the application server at `10.0.1.10:5000`.
 
 ### Application Server (vm-app)
 
