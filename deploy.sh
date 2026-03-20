@@ -73,17 +73,52 @@ az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}" --output non
 # ----------------------------------------------------------
 echo ""
 echo "[7/11] Deploying Azure infrastructure (this takes several minutes)..."
-az deployment group create \
-    --resource-group "${RESOURCE_GROUP}" \
-    --template-file infra/main.bicep \
-    --parameters \
-        adminPublicKey="$(cat ${SSH_KEY_PATH})" \
-        runnerToken="${RUNNER_TOKEN}" \
-        githubRepo="${GITHUB_REPO}" \
-        runnerVersion="${RUNNER_VERSION}" \
-    --output none
 
-# Retrieve outputs separately to avoid streaming issues
+# Build Bicep to ARM JSON (avoids az cli streaming bug with large templates)
+az bicep build --file infra/main.bicep --outfile /tmp/cloudsoft-main.json
+
+# Create deployment request body
+SSH_KEY=$(cat "${SSH_KEY_PATH}")
+python3 -c "
+import json, sys
+with open('/tmp/cloudsoft-main.json') as f:
+    template = json.load(f)
+body = {
+    'properties': {
+        'template': template,
+        'parameters': {
+            'adminPublicKey': {'value': sys.argv[1]},
+            'runnerToken': {'value': sys.argv[2]},
+            'githubRepo': {'value': sys.argv[3]},
+            'runnerVersion': {'value': sys.argv[4]}
+        },
+        'mode': 'Incremental'
+    }
+}
+with open('/tmp/cloudsoft-deploy-body.json', 'w') as f:
+    json.dump(body, f)
+" "${SSH_KEY}" "${RUNNER_TOKEN}" "${GITHUB_REPO}" "${RUNNER_VERSION}"
+
+# Submit deployment via REST API
+az rest --method PUT \
+    --url "https://management.azure.com/subscriptions/${SUBSCRIPTION}/resourcegroups/${RESOURCE_GROUP}/providers/Microsoft.Resources/deployments/main?api-version=2025-04-01" \
+    --body @/tmp/cloudsoft-deploy-body.json \
+    -o none
+
+# Poll deployment until complete
+echo "  Waiting for deployment to complete..."
+while true; do
+    DEP_STATE=$(az deployment group show --resource-group "${RESOURCE_GROUP}" --name main --query 'properties.provisioningState' -o tsv 2>/dev/null || echo "Running")
+    echo "  Status: ${DEP_STATE}"
+    if [ "${DEP_STATE}" = "Succeeded" ]; then break; fi
+    if [ "${DEP_STATE}" = "Failed" ] || [ "${DEP_STATE}" = "Canceled" ]; then
+        echo "  ERROR: Deployment ${DEP_STATE}. Check Azure portal for details."
+        exit 1
+    fi
+    sleep 15
+done
+
+# Retrieve outputs
 PROXY_IP=$(az deployment group show --resource-group "${RESOURCE_GROUP}" --name main --query 'properties.outputs.proxyPublicIp.value' -o tsv)
 BASTION_IP=$(az deployment group show --resource-group "${RESOURCE_GROUP}" --name main --query 'properties.outputs.bastionPublicIp.value' -o tsv)
 STORAGE_ACCOUNT=$(az deployment group show --resource-group "${RESOURCE_GROUP}" --name main --query 'properties.outputs.storageAccountName.value' -o tsv)
