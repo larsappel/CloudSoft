@@ -98,6 +98,31 @@
 - **Root cause:** C# serializes `Email` as PascalCase, but shard key expects lowercase `email`
 - **Fix:** Added `[BsonElement("email")]` attribute to model property
 
+## Phase 5: Acid Test (Delete & Redeploy)
+
+**Procedure:**
+1. `az group delete --name rg-cloudsoft --yes` — Resource group deletion took ~15 minutes (CosmosDB slow to delete)
+2. `git remote remove origin` — Cleaned local git state
+3. `./deploy.sh` — Full one-click redeploy from scratch
+
+**Acid Test Results (New IPs):**
+- Proxy IP: 51.107.182.255
+- Bastion IP: 51.107.181.183
+
+| Test | Result |
+|------|--------|
+| All 4 pages return 200 | PASS |
+| SSL cert has correct IP SAN (51.107.182.255) | PASS |
+| HTTP→HTTPS redirect (301) | PASS |
+| X-Cache-Status header present | PASS |
+| SSH to bastion | PASS |
+| Self-hosted runner online | PASS |
+| Hero image SAS URL on About page | PASS |
+| Subscribe POST (302 + data in CosmosDB) | PASS |
+| deploy.sh ran end-to-end without manual intervention | PASS |
+
+**Acid test: PASSED** — Full clean redeploy from deleted state succeeded on first attempt.
+
 ## Final State
 
-All 18 verification checks pass. The application is fully operational at https://20.240.45.13/ with subscribe/unsubscribe functionality backed by CosmosDB, hero image served via Azure Blob Storage SAS tokens, and CI/CD deploying via self-hosted GitHub Actions runner.
+All verification checks pass on both initial deployment and acid test redeploy. The `deploy.sh` script reliably provisions all infrastructure, deploys the app, and sets up CI/CD from a clean slate. The application is fully operational with subscribe/unsubscribe functionality backed by CosmosDB, hero image served via Azure Blob Storage SAS tokens, and CI/CD deploying via self-hosted GitHub Actions runner.
