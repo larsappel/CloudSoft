@@ -1,10 +1,17 @@
 using CloudSoft.Models;
+using CloudSoft.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CloudSoft.Controllers;
 
 public class NewsletterController : Controller
 {
+    private readonly INewsletterService _newsletterService;
+
+    public NewsletterController(INewsletterService newsletterService)
+    {
+        _newsletterService = newsletterService;
+    }
 
     [HttpGet]
     public IActionResult Subscribe()
@@ -13,18 +20,34 @@ public class NewsletterController : Controller
     }
 
     [HttpPost]
-    public IActionResult Subscribe(Subscriber subscriber)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Subscribe(Subscriber subscriber)
     {
-        // Add subscription logic here
-        // ...
+        if (!ModelState.IsValid)
+            return View(subscriber);
 
-        // Write to the console
-        Console.WriteLine($"New subscription - Name: {subscriber.Name} Email: {subscriber.Email}");
+        var result = await _newsletterService.SubscribeAsync(subscriber);
+        TempData["Message"] = result.Message;
+        TempData["IsSuccess"] = result.IsSuccess.ToString();
 
-        // Send a message to the user
-        ViewBag.Message = $"Thank you for subscribing, {subscriber.Name}!";
+        return RedirectToAction(nameof(Subscribe));
+    }
 
-        // Return the view
-        return View();
+    [HttpGet]
+    public async Task<IActionResult> Subscribers()
+    {
+        var subscribers = await _newsletterService.GetSubscribersAsync();
+        return View(subscribers);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Unsubscribe(string email)
+    {
+        var result = await _newsletterService.UnsubscribeAsync(email);
+        TempData["Message"] = result.Message;
+        TempData["IsSuccess"] = result.IsSuccess.ToString();
+
+        return RedirectToAction(nameof(Subscribers));
     }
 }

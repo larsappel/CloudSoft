@@ -1,0 +1,53 @@
+name: CloudSoft CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Check out this repo
+      uses: actions/checkout@v4
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build and publish
+      run: |
+        dotnet build --no-restore
+        dotnet publish -c Release -o ./publish
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cloudsoft-app
+        path: ./publish
+
+  deploy:
+    runs-on: self-hosted
+    needs: build
+    steps:
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: cloudsoft-app
+
+    - name: Stop application service
+      run: sudo systemctl stop CloudSoft.service || true
+
+    - name: Deploy application
+      run: |
+        sudo rm -rf /opt/cloudsoft || true
+        sudo cp -r /home/azureuser/actions-runner/_work/CloudSoft/CloudSoft/ /opt/cloudsoft
+        sudo chown -R dotnet-app:dotnet-app /opt/cloudsoft
+
+    - name: Start application service
+      run: sudo systemctl start CloudSoft.service

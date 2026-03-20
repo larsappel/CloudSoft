@@ -1,0 +1,53 @@
+#cloud-config
+package_update: true
+
+packages:
+  - nginx
+
+write_files:
+  - path: /etc/nginx/sites-available/cloudsoft
+    content: |
+      limit_req_zone $binary_remote_addr zone=mylimit:10m rate=10r/s;
+
+      proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=app_cache:10m max_size=100m inactive=60m;
+
+      # HTTP → HTTPS redirect
+      server {
+          listen 80;
+          server_name _;
+          return 301 https://$host$request_uri;
+      }
+
+      # HTTPS server
+      server {
+          listen 443 ssl;
+          server_name _;
+
+          ssl_certificate /etc/ssl/certs/cloudsoft.crt;
+          ssl_certificate_key /etc/ssl/private/cloudsoft.key;
+
+          limit_req zone=mylimit burst=20 nodelay;
+
+          proxy_cache app_cache;
+
+          location / {
+              proxy_pass http://__APP_PRIVATE_IP__:5000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_cache_valid 200 10m;
+              add_header X-Cache-Status $upstream_cache_status;
+          }
+      }
+    owner: root:root
+    permissions: '0644'
+
+runcmd:
+  # Generate self-signed certificate with IP SAN
+  - openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/cloudsoft.key -out /etc/ssl/certs/cloudsoft.crt -subj "/CN=cloudsoft" -addext "subjectAltName=IP:__PROXY_PUBLIC_IP__"
+  # Enable site
+  - rm -f /etc/nginx/sites-enabled/default
+  - ln -sf /etc/nginx/sites-available/cloudsoft /etc/nginx/sites-enabled/cloudsoft
+  # Restart nginx
+  - systemctl restart nginx

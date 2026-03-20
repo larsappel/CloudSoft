@@ -1,0 +1,22 @@
+@{
+    ViewData["Title"] = "About";
+}
+
+<div class="hero-section" style="background-image: url('@ViewData["HeroImageUrl"]');">
+    <div class="hero-overlay">
+        <h1 class="display-4 text-white">About CloudSoft</h1>
+        <p class="lead text-white">A cloud-native newsletter application built with ASP.NET Core, Azure CosmosDB, and Blob Storage.</p>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h2>Architecture</h2>
+    <p>CloudSoft demonstrates a modern IaaS + PaaS architecture on Microsoft Azure:</p>
+    <ul>
+        <li><strong>Bastion Host</strong> — Secure SSH jump box</li>
+        <li><strong>Reverse Proxy</strong> — Nginx with SSL termination, rate limiting, and caching</li>
+        <li><strong>Application Server</strong> — ASP.NET Core running as a systemd service</li>
+        <li><strong>CosmosDB</strong> — MongoDB API for subscriber data</li>
+        <li><strong>Blob Storage</strong> — Image hosting with SAS token access</li>
+    </ul>
+</div>

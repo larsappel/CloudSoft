@@ -1,0 +1,63 @@
+#cloud-config
+package_update: true
+
+write_files:
+  - path: /etc/systemd/system/CloudSoft.service
+    content: |
+      [Unit]
+      Description=CloudSoft ASP.NET Web App
+      After=network.target
+
+      [Service]
+      WorkingDirectory=/opt/cloudsoft
+      ExecStart=/usr/bin/dotnet /opt/cloudsoft/CloudSoft.dll
+      Restart=always
+      RestartSec=10
+      KillSignal=SIGINT
+      SyslogIdentifier=CloudSoft
+      User=dotnet-app
+      Environment=ASPNETCORE_ENVIRONMENT=Production
+      Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+      Environment="ASPNETCORE_URLS=http://*:5000"
+      Environment="FeatureFlags__UseMongoDB=true"
+      Environment="FeatureFlags__UseAzureBlobStorage=true"
+      Environment="MongoDb__ConnectionString=__COSMOS_CONNECTION_STRING__"
+      Environment="MongoDb__DatabaseName=cloudsoft"
+      Environment="MongoDb__SubscribersCollectionName=subscribers"
+      Environment="AzureBlob__AccountName=__STORAGE_ACCOUNT_NAME__"
+      Environment="AzureBlob__AccountKey=__STORAGE_ACCOUNT_KEY__"
+      Environment="AzureBlob__ContainerName=images"
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root:root
+    permissions: '0644'
+
+runcmd:
+  # Install .NET Runtime
+  - wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O /tmp/packages-microsoft-prod.deb
+  - dpkg -i /tmp/packages-microsoft-prod.deb
+  - apt-get update
+  - apt-get install -y aspnetcore-runtime-10.0
+
+  # Create app user and directory
+  - useradd -r -s /usr/sbin/nologin dotnet-app
+  - mkdir -p /opt/cloudsoft
+  - chown dotnet-app:dotnet-app /opt/cloudsoft
+
+  # Enable service (will start after first deploy)
+  - systemctl daemon-reload
+  - systemctl enable CloudSoft.service
+
+  # Install GitHub Actions Runner
+  - mkdir -p /home/azureuser/actions-runner
+  - cd /home/azureuser/actions-runner && curl -o actions-runner-linux-x64.tar.gz -L https://github.com/actions/runner/releases/download/v__RUNNER_VERSION__/actions-runner-linux-x64-__RUNNER_VERSION__.tar.gz
+  - cd /home/azureuser/actions-runner && tar xzf actions-runner-linux-x64.tar.gz
+  - chown -R azureuser:azureuser /home/azureuser/actions-runner
+
+  # Configure runner
+  - su - azureuser -c "cd /home/azureuser/actions-runner && ./config.sh --url https://github.com/__GITHUB_REPO__ --token __RUNNER_TOKEN__ --unattended --replace --name cloudsoft-runner --labels self-hosted,Linux,X64"
+
+  # Install and start runner service
+  - cd /home/azureuser/actions-runner && ./svc.sh install azureuser
+  - cd /home/azureuser/actions-runner && ./svc.sh start
