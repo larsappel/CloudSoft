@@ -215,6 +215,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' = {
     locations: [{ locationName: location, failoverPriority: 0 }]
     capabilities: [{ name: 'EnableMongo' }]
     consistencyPolicy: { defaultConsistencyLevel: 'Session' }
+    apiProperties: { serverVersion: '7.0' }
   }
 }
 
